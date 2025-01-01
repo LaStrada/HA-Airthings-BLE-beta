@@ -22,11 +22,14 @@ from .const import DOMAIN, MFCT_ID
 
 _LOGGER = logging.getLogger(__name__)
 
+WAVE_ENHANCE_SERVICE_UUID = "b42e90a2-ade7-11e4-89d3-123b93f75cba"
+
 SERVICE_UUIDS = [
     "b42e1f6e-ade7-11e4-89d3-123b93f75cba",
     "b42e4a8e-ade7-11e4-89d3-123b93f75cba",
     "b42e1c08-ade7-11e4-89d3-123b93f75cba",
     "b42e3882-ade7-11e4-89d3-123b93f75cba",
+    WAVE_ENHANCE_SERVICE_UUID,
 ]
 
 
@@ -45,7 +48,7 @@ def get_name(device: AirthingsDevice) -> str:
 
     name = device.friendly_name()
     if identifier := device.identifier:
-        name += f" ({identifier})"
+        name += f" ({device.model.value}{identifier})"
     return name
 
 
@@ -96,10 +99,10 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
-        data = AirthingsBluetoothDeviceData()
+        data = AirthingsBluetoothDeviceData(logger=_LOGGER)
 
         try:
-            device = await self._get_device(discovery_info)
+            device = await self._get_device(data=data, discovery_info=discovery_info)
         except AirthingsDeviceUpdateError:
             return self.async_abort(reason="cannot_connect")
         except Exception:  # noqa: BLE001
@@ -109,9 +112,7 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
         self.context["title_placeholders"] = {
             "name": name,
         }
-        self._discovered_device = Discovery(
-            name, discovery_info, device, data=data
-        )
+        self._discovered_device = Discovery(name, discovery_info, device, data=data)
 
         return await self.async_step_bluetooth_confirm()
 
@@ -120,6 +121,13 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Confirm discovery."""
         if user_input is not None:
+            # Make sure self._discovered_device.device exists
+            if (
+                self._discovered_device is not None
+                and self._discovered_device.device.firmware.need_fw_upgrade
+            ):
+                return self.async_abort(reason="firmware_upgrade_required")
+
             return self.async_create_entry(
                 title=self.context["title_placeholders"]["name"], data={}
             )
@@ -160,16 +168,21 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
             if MFCT_ID not in discovery_info.manufacturer_data:
                 continue
 
-            if (
-                not any(uuid in SERVICE_UUIDS for uuid in discovery_info.service_uuids)
-                and "Tern" not in discovery_info.name
+            if WAVE_ENHANCE_SERVICE_UUID in discovery_info.service_uuids:
+                if "Airthings Tern" not in discovery_info.name:
+                    _LOGGER.debug(
+                        "Skipping unsupported device: %s", discovery_info.name
+                    )
+                    continue
+            elif not any(
+                uuid in SERVICE_UUIDS for uuid in discovery_info.service_uuids
             ):
-                _LOGGER.warning("Skipping %s", discovery_info.name)
+                _LOGGER.debug("Skipping unsupported device: %s", discovery_info.name)
                 continue
 
-            _LOGGER.debug("Continuing with %s", discovery_info.name)
+            _LOGGER.debug("Found %s (%s)", discovery_info.name, discovery_info.address)
 
-            data = AirthingsBluetoothDeviceData()
+            data = AirthingsBluetoothDeviceData(logger=_LOGGER)
 
             try:
                 device = await self._get_device(data, discovery_info)
