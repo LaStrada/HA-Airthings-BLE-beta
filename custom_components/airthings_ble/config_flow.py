@@ -6,7 +6,11 @@ import dataclasses
 import logging
 from typing import Any
 
-from airthings_ble import AirthingsBluetoothDeviceData, AirthingsDevice
+from airthings_ble import (
+    AirthingsBluetoothDeviceData,
+    AirthingsDevice,
+    AirthingsDeviceType,
+)
 from bleak import BleakError
 import voluptuous as vol
 
@@ -121,7 +125,6 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Confirm discovery."""
         if user_input is not None:
-            # Make sure self._discovered_device.device exists
             if (
                 self._discovered_device is not None
                 and self._discovered_device.device.firmware.need_fw_upgrade
@@ -168,15 +171,7 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
             if MFCT_ID not in discovery_info.manufacturer_data:
                 continue
 
-            if WAVE_ENHANCE_SERVICE_UUID in discovery_info.service_uuids:
-                if "Airthings Tern" not in discovery_info.name:
-                    _LOGGER.debug(
-                        "Skipping unsupported device: %s", discovery_info.name
-                    )
-                    continue
-            elif not any(
-                uuid in SERVICE_UUIDS for uuid in discovery_info.service_uuids
-            ):
+            if not any(uuid in SERVICE_UUIDS for uuid in discovery_info.service_uuids):
                 _LOGGER.debug("Skipping unsupported device: %s", discovery_info.name)
                 continue
 
@@ -190,6 +185,10 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_abort(reason="cannot_connect")
             except Exception:  # noqa: BLE001
                 return self.async_abort(reason="unknown")
+
+            if device.model == AirthingsDeviceType.UNKNOWN:
+                _LOGGER.debug("Skipping unsupported device: %s", discovery_info.name)
+                continue
 
             name = get_name(device)
             self._discovered_devices[address] = Discovery(
