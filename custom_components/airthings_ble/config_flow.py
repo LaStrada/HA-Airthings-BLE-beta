@@ -93,7 +93,7 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
             _LOGGER.error(
                 "Unknown error occurred from %s: %s", discovery_info.address, err
             )
-            _LOGGER.error("There was an error: %s", err.args[0])
+            raise
         return device
 
     async def async_step_bluetooth(
@@ -186,7 +186,7 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
             except Exception:  # noqa: BLE001
                 return self.async_abort(reason="unknown")
 
-            if device.model == AirthingsDeviceType.UNKNOWN:
+            if device.model is AirthingsDeviceType.UNKNOWN:
                 _LOGGER.debug("Skipping unsupported device: %s", discovery_info.name)
                 continue
 
