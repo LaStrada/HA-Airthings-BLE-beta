@@ -20,7 +20,6 @@
     },
     {
       "manufacturer_id": 820,
-      "local_name": "Airthings Tern CO2",
       "service_uuid": "b42e90a2-ade7-11e4-89d3-123b93f75cba"
     }
   ],
@@ -29,6 +28,6 @@
   "dependencies": ["bluetooth_adapters"],
   "documentation": "https://www.home-assistant.io/integrations/airthings_ble",
   "iot_class": "local_polling",
-  "requirements": ["airthings-ble==1.0.0b4"],
+  "requirements": ["airthings-ble==1.0.0b5"],
   "version": "1.0.0"
 }

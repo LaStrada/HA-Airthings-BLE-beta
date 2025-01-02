@@ -9,7 +9,7 @@ from typing import Any
 from airthings_ble import (
     AirthingsBluetoothDeviceData,
     AirthingsDevice,
-    AirthingsDeviceType,
+    UnsupportedDeviceError,
 )
 from bleak import BleakError
 import voluptuous as vol
@@ -89,6 +89,9 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
                 err,
             )
             raise AirthingsDeviceUpdateError("Failed getting device data") from err
+        except UnsupportedDeviceError:
+            _LOGGER.debug("Skipping unsupported device: %s", discovery_info.name)
+            raise
         except Exception as err:  # noqa: BLE001
             _LOGGER.error(
                 "Unknown error occurred from %s: %s", discovery_info.address, err
@@ -109,6 +112,9 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
             device = await self._get_device(data=data, discovery_info=discovery_info)
         except AirthingsDeviceUpdateError:
             return self.async_abort(reason="cannot_connect")
+        except UnsupportedDeviceError:
+            _LOGGER.debug("Skipping unsupported device: %s", discovery_info.name)
+            return self.async_abort(reason="unsupported_device")
         except Exception:  # noqa: BLE001
             return self.async_abort(reason="unknown")
 
@@ -183,12 +189,11 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
                 device = await self._get_device(data, discovery_info)
             except AirthingsDeviceUpdateError:
                 return self.async_abort(reason="cannot_connect")
-            except Exception:  # noqa: BLE001
-                return self.async_abort(reason="unknown")
-
-            if device.model is AirthingsDeviceType.UNKNOWN:
+            except UnsupportedDeviceError:
                 _LOGGER.debug("Skipping unsupported device: %s", discovery_info.name)
                 continue
+            except Exception:  # noqa: BLE001
+                return self.async_abort(reason="unknown")
 
             name = get_name(device)
             self._discovered_devices[address] = Discovery(

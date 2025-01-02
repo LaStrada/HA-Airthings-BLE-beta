@@ -6,7 +6,8 @@
             "cannot_connect": "Failed to connect",
             "firmware_upgrade_required": "A firmware upgrade is required for your device. To upgrade the firmware of your device, please use the Airthings app (Android/iOS).",
             "no_devices_found": "No devices found on the network",
-            "unknown": "Unexpected error"
+            "unknown": "Unexpected error",
+            "unsupported_device": "Unsupported device"
         },
         "flow_title": "{name}",
         "step": {

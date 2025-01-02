@@ -18,6 +18,7 @@
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
       "firmware_upgrade_required": "A firmware upgrade is required for your device. To upgrade the firmware of your device, please use the Airthings app (Android/iOS).",
+      "unsupported_device": "Unsupported device",
       "unknown": "[%key:common::config_flow::error::unknown%]"
     }
   },
