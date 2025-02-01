@@ -161,12 +161,12 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_abort(reason="firmware_upgrade_required")
 
             self.context["title_placeholders"] = {
-                "name": discovery.name,
+                "name": discovery.device.name,
             }
 
             self._discovered_device = discovery
 
-            return self.async_create_entry(title=discovery.name, data={})
+            return self.async_create_entry(title=discovery.device.name, data={})
 
         current_addresses = self._async_current_ids()
         for discovery_info in list(async_discovered_service_info(self.hass)):
@@ -191,7 +191,7 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_abort(reason="cannot_connect")
             except UnsupportedDeviceError:
                 _LOGGER.debug("Skipping unsupported device: %s", discovery_info.name)
-                continue
+                return self.async_abort(reason="unsupported_device")
             except Exception:  # noqa: BLE001
                 return self.async_abort(reason="unknown")
 
