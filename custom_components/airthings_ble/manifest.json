@@ -28,6 +28,6 @@
   "dependencies": ["bluetooth_adapters"],
   "documentation": "https://www.home-assistant.io/integrations/airthings_ble",
   "iot_class": "local_polling",
-  "requirements": ["airthings-ble==1.0.0b5"],
-  "version": "1.0.0"
+  "version": "1.1.0"
+  "requirements": ["airthings-ble==1.1.0"]
 }
