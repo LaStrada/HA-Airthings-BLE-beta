@@ -26,14 +26,14 @@ from .const import DOMAIN, MFCT_ID
 
 _LOGGER = logging.getLogger(__name__)
 
-WAVE_ENHANCE_SERVICE_UUID = "b42e90a2-ade7-11e4-89d3-123b93f75cba"
+ATOM_SERVICE_UUID = "b42e90a2-ade7-11e4-89d3-123b93f75cba"
 
 SERVICE_UUIDS = [
     "b42e1f6e-ade7-11e4-89d3-123b93f75cba",
     "b42e4a8e-ade7-11e4-89d3-123b93f75cba",
     "b42e1c08-ade7-11e4-89d3-123b93f75cba",
     "b42e3882-ade7-11e4-89d3-123b93f75cba",
-    WAVE_ENHANCE_SERVICE_UUID,
+    ATOM_SERVICE_UUID,
 ]
 
 
@@ -92,7 +92,7 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
         except UnsupportedDeviceError:
             _LOGGER.debug("Skipping unsupported device: %s", discovery_info.name)
             raise
-        except Exception as err:  # noqa: BLE001
+        except Exception as err:
             _LOGGER.error(
                 "Unknown error occurred from %s: %s", discovery_info.address, err
             )
@@ -133,7 +133,7 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             if (
                 self._discovered_device is not None
-                and self._discovered_device.device.firmware.need_fw_upgrade
+                and self._discovered_device.device.firmware.need_firmware_upgrade
             ):
                 return self.async_abort(reason="firmware_upgrade_required")
 
@@ -157,7 +157,7 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
             discovery = self._discovered_devices[address]
 
-            if discovery.device.firmware.need_fw_upgrade:
+            if discovery.device.firmware.need_firmware_upgrade:
                 return self.async_abort(reason="firmware_upgrade_required")
 
             self.context["title_placeholders"] = {

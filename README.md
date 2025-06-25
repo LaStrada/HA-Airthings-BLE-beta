@@ -5,3 +5,4 @@ This is a custom integration for Home Assistant to integrate with Airthings BLE 
 This beta contains the following changes:
 
 - Added support for the [Airthings Wave Enhance](https://www.airthings.com/wave-enhance)
+- Added support for the [Airthings Corentium Home 2](https://www.airthings.com/corentium-home-2)

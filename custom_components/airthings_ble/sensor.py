@@ -27,7 +27,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.entity_registry import (
     RegistryEntry,
     async_entries_for_device,
@@ -56,6 +56,27 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
         suggested_display_precision=0,
         state_class=SensorStateClass.MEASUREMENT,
     ),
+    "radon_week_avg": SensorEntityDescription(
+        key="radon_week_avg",
+        translation_key="radon_week_avg",
+        native_unit_of_measurement=VOLUME_BECQUEREL,
+        suggested_display_precision=0,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "radon_month_avg": SensorEntityDescription(
+        key="radon_month_avg",
+        translation_key="radon_month_avg",
+        native_unit_of_measurement=VOLUME_BECQUEREL,
+        suggested_display_precision=0,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    "radon_year_avg": SensorEntityDescription(
+        key="radon_year_avg",
+        translation_key="radon_year_avg",
+        native_unit_of_measurement=VOLUME_BECQUEREL,
+        suggested_display_precision=0,
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
     "radon_1day_level": SensorEntityDescription(
         key="radon_1day_level",
         translation_key="radon_1day_level",
@@ -63,6 +84,18 @@ SENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {
     "radon_longterm_level": SensorEntityDescription(
         key="radon_longterm_level",
         translation_key="radon_longterm_level",
+    ),
+    "radon_week_level": SensorEntityDescription(
+        key="radon_week_level",
+        translation_key="radon_week_level",
+    ),
+    "radon_month_level": SensorEntityDescription(
+        key="radon_month_level",
+        translation_key="radon_month_level",
+    ),
+    "radon_year_level": SensorEntityDescription(
+        key="radon_year_level",
+        translation_key="radon_year_level",
     ),
     "temperature": SensorEntityDescription(
         key="temperature",
@@ -169,7 +202,7 @@ def async_migrate(hass: HomeAssistant, address: str, sensor_name: str) -> None:
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: AirthingsBLEConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the Airthings BLE sensors."""
     is_metric = hass.config.units is METRIC_SYSTEM
