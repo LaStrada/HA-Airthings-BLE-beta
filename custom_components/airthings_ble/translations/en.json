@@ -2,9 +2,8 @@
     "config": {
         "abort": {
             "already_configured": "Device is already configured",
-            "already_in_progress": "Configuration flow is already in progress",
             "cannot_connect": "Failed to connect",
-            "firmware_upgrade_required": "A firmware upgrade is required for your device. To upgrade the firmware of your device, please use the Airthings app (Android/iOS).",
+            "firmware_upgrade_required": "Your device requires a firmware upgrade. Please use the Airthings app (Android/iOS) to upgrade it.",
             "no_devices_found": "No devices found on the network",
             "unknown": "Unexpected error",
             "unsupported_device": "Unsupported device"
@@ -18,12 +17,26 @@
                 "data": {
                     "address": "Device"
                 },
+                "data_description": {
+                    "address": "The Airthings devices discovered via Bluetooth."
+                },
                 "description": "Choose a device to set up"
             }
         }
     },
     "entity": {
         "sensor": {
+            "ambient_noise": {
+                "name": "Ambient noise"
+            },
+            "connectivity_mode": {
+                "name": "Connectivity mode",
+                "state": {
+                    "bluetooth": "Bluetooth",
+                    "not_configured": "Not configured",
+                    "smartlink": "SmartLink"
+                }
+            },
             "illuminance": {
                 "name": "Illuminance"
             },
@@ -31,32 +44,32 @@
                 "name": "Radon 1-day average"
             },
             "radon_1day_level": {
-                "name": "Radon 1-day level"
+                "name": "Radon 1-day level",
+                "state": {
+                    "fair": "Fair",
+                    "good": "Good",
+                    "poor": "Poor"
+                }
             },
             "radon_longterm_avg": {
                 "name": "Radon longterm average"
             },
             "radon_longterm_level": {
-                "name": "Radon longterm level"
-            },
-            "radon_month_avg": {
-                "name": "Radon monthly average"
-            },
-            "radon_month_level": {
-                "name": "Radon monthly level"
-            },
-            "radon_week_avg": {
-                "name": "Radon weekly average"
-            },
-            "radon_week_level": {
-                "name": "Radon weekly level"
-            },
-            "radon_year_avg": {
-                "name": "Radon yearly average"
-            },
-            "radon_year_level": {
-                "name": "Radon yearly level"
+                "name": "Radon longterm level",
+                "state": {
+                    "fair": "Fair",
+                    "good": "Good",
+                    "poor": "Poor"
+                }
             }
+        }
+    },
+    "exceptions": {
+        "device_not_found": {
+            "message": "Could not find Airthings device with address {address}: {reason}"
+        },
+        "incomplete_read": {
+            "message": "The Airthings device did not return complete data, retrying"
         }
     }
 }
