@@ -4,8 +4,8 @@ A beta of the built-in [Airthings BLE](https://www.home-assistant.io/integration
 
 ## Current beta
 
-- Version: **1.3.0b1**
-- airthings-ble: **1.3.0rc1** ([release notes](https://github.com/Airthings/airthings-ble/releases/tag/1.3.0rc1))
+- Version: **1.3.0b2**
+- airthings-ble: **1.3.0** ([release notes](https://github.com/Airthings/airthings-ble/releases/tag/1.3.0))
 - Integration code: home-assistant/core `dev` at [`94122d5a95b0`](https://github.com/home-assistant/core/tree/94122d5a95b094855e99377518a2cd9102418cba/homeassistant/components/airthings_ble)
 - Requires Home Assistant **2026.10.0** or newer
 

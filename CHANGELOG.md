@@ -2,6 +2,12 @@
 
 Every release of the Airthings BLE HACS beta, newest first.
 
+## 1.3.0b2 (2026-10-14)
+
+- airthings-ble 1.3.0 ([release notes](https://github.com/Airthings/airthings-ble/releases/tag/1.3.0)), the same code as 1.3.0rc1
+- A sensor without a value in the latest reading shows as unknown instead of unavailable
+- Integration from home-assistant/core `dev` [`0152f6d9aae4`](https://github.com/home-assistant/core/tree/0152f6d9aae446db6aee94ca229c48f94efd4353/homeassistant/components/airthings_ble), with `__init__.py` kept compatible with Home Assistant 2026.10
+
 ## 1.3.0b1 (2026-10-10)
 
 - No more dropped ESPHome Bluetooth proxy connections when a device disconnects
