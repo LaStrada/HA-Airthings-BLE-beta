@@ -4,18 +4,20 @@ A beta of the built-in [Airthings BLE](https://www.home-assistant.io/integration
 
 ## Current beta
 
-- Version: **1.3.0b3**
-- airthings-ble: **1.3.1** ([release notes](https://github.com/Airthings/airthings-ble/releases/tag/1.3.1))
-- Integration code: home-assistant/core `dev` at [`94122d5a95b0`](https://github.com/home-assistant/core/tree/94122d5a95b094855e99377518a2cd9102418cba/homeassistant/components/airthings_ble)
-- Requires Home Assistant **2026.10.0** or newer
+- Version: **1.4.1b1**
+- airthings-ble: **1.4.1rc1** ([release notes](https://github.com/Airthings/airthings-ble/releases/tag/1.4.1rc1))
+- Integration code: home-assistant/core `dev` at [`d22efd4d8506`](https://github.com/home-assistant/core/tree/d22efd4d8506e6264b79ee903aceb11c82f1ab88/homeassistant/components/airthings_ble)
+- Requires Home Assistant **2026.11.0** or newer
 
 What to test in this beta:
 
-- No more dropped ESPHome Bluetooth proxy connections when a device disconnects
-- Wave Enhance and Corentium Home 2 work through proxies with a small MTU (fragmented responses)
-- Temperatures below 0 °C are reported correctly
-- Wave Mini no longer reports 1310.7 hPa / 100 % light right after power-up
-- Steadier connections: shorter command timeout, notifications always stopped
+- Discovery no longer connects to nearby Airthings devices; the device is identified from its Bluetooth advertisement, and only confirming the setup connects to it
+- Devices the advertisement does not identify as supported (for example View devices) are no longer offered for setup and are not connected to
+- A failed connection when confirming a discovered device shows an error and can be retried instead of aborting the setup
+- A repair issue tells you when a device is connected to an Airthings hub (SmartLink) or has no connectivity configured, so it cannot be read over Bluetooth
+- New radon 7-day, 30-day and 1-year average sensors for Corentium Home 2
+- Duplicate devices left behind by incomplete reads are removed
+- Requires Home Assistant 2026.11.0 or newer
 
 All releases: [CHANGELOG.md](CHANGELOG.md).
 

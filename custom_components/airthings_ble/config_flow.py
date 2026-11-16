@@ -5,9 +5,12 @@ import logging
 from typing import Any, override
 
 from airthings_ble import (
+    AirthingsAdvertisementData,
     AirthingsBluetoothDeviceData,
     AirthingsDevice,
+    DisconnectedError,
     UnsupportedDeviceError,
+    parse_advertisement_data,
 )
 from bleak import BleakError
 from habluetooth import BluetoothServiceInfoBleak
@@ -53,6 +56,24 @@ def get_name(device: AirthingsDevice) -> str:
     return name
 
 
+def parse_advertisement(
+    discovery_info: BluetoothServiceInfo,
+) -> AirthingsAdvertisementData | None:
+    """Classify a discovered device from its advertisement, without connecting."""
+    return parse_advertisement_data(
+        manufacturer_data=discovery_info.manufacturer_data.get(MFCT_ID),
+        service_uuids=discovery_info.service_uuids,
+    )
+
+
+def get_advertisement_name(advertisement: AirthingsAdvertisementData) -> str:
+    """Generate a name for a device from its advertisement."""
+    name = f"Airthings {advertisement.model.product_name}"
+    if serial_number := advertisement.serial_number:
+        name += f" ({serial_number})"
+    return name
+
+
 class AirthingsDeviceUpdateError(Exception):
     """Custom error class for device updates."""
 
@@ -61,10 +82,11 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Airthings BLE."""
 
     VERSION = 1
+    MINOR_VERSION = 2
 
     def __init__(self) -> None:
         """Initialize the config flow."""
-        self._discovered_device: Discovery | None = None
+        self._discovery_info: BluetoothServiceInfo | None = None
         self._discovered_devices: dict[str, Discovery] = {}
 
     async def _get_device(
@@ -78,23 +100,14 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
             raise AirthingsDeviceUpdateError("No ble_device")
 
         try:
-            device = await data.update_device(ble_device)
-        except BleakError as err:
-            _LOGGER.error(
+            return await data.update_device(ble_device)
+        except (BleakError, TimeoutError, DisconnectedError) as err:
+            _LOGGER.debug(
                 "Error connecting to and getting data from %s: %s",
                 discovery_info.address,
                 err,
             )
             raise AirthingsDeviceUpdateError("Failed getting device data") from err
-        except UnsupportedDeviceError:
-            _LOGGER.debug("Skipping unsupported device: %s", discovery_info.name)
-            raise
-        except Exception as err:
-            _LOGGER.error(
-                "Unknown error occurred from %s: %s", discovery_info.address, err
-            )
-            raise
-        return device
 
     @override
     async def async_step_bluetooth(
@@ -105,21 +118,19 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
-        data = AirthingsBluetoothDeviceData(logger=_LOGGER)
-
-        try:
-            device = await self._get_device(data=data, discovery_info=discovery_info)
-        except AirthingsDeviceUpdateError:
-            return self.async_abort(reason="cannot_connect")
-        except UnsupportedDeviceError:
+        advertisement = parse_advertisement(discovery_info)
+        if advertisement is None:
+            _LOGGER.debug(
+                "Skipping unsupported device: %s (%s)",
+                discovery_info.name,
+                discovery_info.address,
+            )
             return self.async_abort(reason="unsupported_device")
-        except Exception:
-            _LOGGER.exception("Unknown error occurred")
-            return self.async_abort(reason="unknown")
 
-        name = get_name(device)
-        self.context["title_placeholders"] = {"name": name}
-        self._discovered_device = Discovery(name, discovery_info, device, data=data)
+        self.context["title_placeholders"] = {
+            "name": get_advertisement_name(advertisement)
+        }
+        self._discovery_info = discovery_info
 
         return await self.async_step_bluetooth_confirm()
 
@@ -127,21 +138,33 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Confirm discovery."""
-        assert self._discovered_device is not None
+        assert self._discovery_info is not None
+        errors: dict[str, str] = {}
 
         if user_input is not None:
-            if self._discovered_device.device.firmware.need_firmware_upgrade:
-                return self.async_abort(reason="firmware_upgrade_required")
+            data = AirthingsBluetoothDeviceData(logger=_LOGGER)
+            try:
+                device = await self._get_device(data, self._discovery_info)
+            except AirthingsDeviceUpdateError:
+                errors["base"] = "cannot_connect"
+            except UnsupportedDeviceError:
+                return self.async_abort(reason="unsupported_device")
+            except Exception:
+                _LOGGER.exception("Unknown error occurred")
+                return self.async_abort(reason="unknown")
+            else:
+                if device.firmware.need_firmware_upgrade:
+                    return self.async_abort(reason="firmware_upgrade_required")
 
-            return self.async_create_entry(
-                title=self.context["title_placeholders"]["name"],
-                data={DEVICE_MODEL: self._discovered_device.device.model.value},
-            )
+                return self.async_create_entry(
+                    title=get_name(device),
+                    data={DEVICE_MODEL: device.model.value},
+                )
 
-        self._set_confirm_only()
         return self.async_show_form(
             step_id="bluetooth_confirm",
             description_placeholders=self.context["title_placeholders"],
+            errors=errors,
         )
 
     @override
@@ -162,8 +185,6 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
                 "name": discovery.name,
             }
 
-            self._discovered_device = discovery
-
             return self.async_create_entry(
                 title=discovery.name,
                 data={DEVICE_MODEL: discovery.device.model.value},
@@ -177,7 +198,9 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
                 continue
             if MFCT_ID not in discovery_info.manufacturer_data:
                 continue
-            if not any(uuid in SERVICE_UUIDS for uuid in discovery_info.service_uuids):
+            if not any(
+                uuid in SERVICE_UUIDS for uuid in discovery_info.service_uuids
+            ) or (parse_advertisement(discovery_info) is None):
                 _LOGGER.debug(
                     "Skipping unsupported device: %s (%s)", discovery_info.name, address
                 )
@@ -190,11 +213,6 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
             try:
                 device = await self._get_device(data, discovery_info)
             except AirthingsDeviceUpdateError:
-                _LOGGER.error(
-                    "Error connecting to and getting data from %s (%s)",
-                    discovery_info.name,
-                    discovery_info.address,
-                )
                 continue
             except UnsupportedDeviceError:
                 _LOGGER.debug(
@@ -204,8 +222,8 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
                 continue
             except Exception:
-                _LOGGER.exception("Unknown error occurred")
-                return self.async_abort(reason="unknown")
+                _LOGGER.exception("Unknown error occurred from %s", address)
+                continue
             name = get_name(device)
             _LOGGER.debug("Discovered Airthings device: %s (%s)", name, address)
             self._discovered_devices[address] = Discovery(
